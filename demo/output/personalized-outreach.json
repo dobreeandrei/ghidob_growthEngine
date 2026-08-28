@@ -1,20 +1,20 @@
 {
   "claim_audit": [
     {
-      "claim": "Cal.com is hiring a Chief of Staff, GTM (NYC, hybrid) to support the Head of Go-to-Market and keep their growing GTM team moving fast.",
-      "source": "https://cal.com/jobs",
-      "supported_by_fact": "Cal.com is hiring a Chief of Staff, GTM (NYC, hybrid) to support the Head of Go-to-Market and keep their growing GTM team moving fast."
+      "claim": "Cal.com is one of the best options for scheduling software for small business thanks to a free tier that includes unlimited event types, workflow automation, Stripe payments, and Cal Video, making it the most generous free scheduling tool available. Small businesses needing booking software with team features can upgrade to Teams at $16/user/month for round-robin scheduling and shared availability",
+      "source": "https://cal.com",
+      "supported_by_fact": "Cal.com is one of the best options for scheduling software for small business thanks to a free tier that includes unlimited event types, workflow automation, Stripe payments, and Cal Video, making it the most generous free scheduling tool available. Small businesses needing booking software with team features can upgrade to Teams at $16/user/month for round-robin scheduling and shared availability"
     }
   ],
-  "email_body": "Hi,\n\nFor your work, the supplied company evidence states: Cal.com is hiring a Chief of Staff, GTM (NYC, hybrid) to support the Head of Go-to-Market and keep their growing GTM team moving fast. [1]\n\nI'm Andrei Ghita, Founder. We help GTM teams send fact-backed cold outreach instead of generic templates.\n\nOpen to a 15-minute call this week?\n\nRegards,\nAndrei Ghita",
+  "email_body": "Hi,\n\nI noticed that Cal.com is one of the best options for scheduling software for small business thanks to a free tier that includes unlimited event types, workflow automation, Stripe payments, and Cal Video, making it the most generous free scheduling tool available. Small businesses needing booking software with team features can upgrade to Teams at $16/user/month for round-robin scheduling and shared availability [1]\n\nGiven your Head of Go-to-Market role, I wanted to reach out.\n\nI'm Andrei Ghita, Founder. We help GTM teams send fact-backed cold outreach instead of generic templates.\n\nOpen to a 15-minute call this week?\n\nRegards,\nAndrei Ghita",
   "evidence_ledger": [
     {
-      "category": "hiring",
+      "category": "other",
       "marker": "[1]",
-      "outreach_claim": "Cal.com is hiring a Chief of Staff, GTM (NYC, hybrid) to support the Head of Go-to-Market and keep their growing GTM team moving fast.",
-      "source": "https://cal.com/jobs",
+      "outreach_claim": "Cal.com is one of the best options for scheduling software for small business thanks to a free tier that includes unlimited event types, workflow automation, Stripe payments, and Cal Video, making it the most generous free scheduling tool available. Small businesses needing booking software with team features can upgrade to Teams at $16/user/month for round-robin scheduling and shared availability",
+      "source": "https://cal.com",
       "support_relationship": "verbatim",
-      "supporting_fact_text": "Cal.com is hiring a Chief of Staff, GTM (NYC, hybrid) to support the Head of Go-to-Market and keep their growing GTM team moving fast."
+      "supporting_fact_text": "Cal.com is one of the best options for scheduling software for small business thanks to a free tier that includes unlimited event types, workflow automation, Stripe payments, and Cal Video, making it the most generous free scheduling tool available. Small businesses needing booking software with team features can upgrade to Teams at $16/user/month for round-robin scheduling and shared availability"
     }
   ],
   "limitations": [
@@ -23,5 +23,5 @@
     "Sender, contact, and offer details are user-provided and were not independently verified.",
     "The locked input schema has no retrieval-date field, so no retrieval date was inferred."
   ],
-  "subject": "Regarding Cal.com"
+  "subject": "Cal.com — company note"
 }

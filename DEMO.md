@@ -10,24 +10,24 @@ The organizer presents this repository for you, in 2 minutes, without having see
 
 **Who has the problem:** A founder or SDR at an early-stage B2B SaaS company, doing their own cold outreach
 
-**The job this skill does:** Turns a set of sourced company facts into a short cold email that cites those facts, instead of generic filler
+**The job this skill does:** Scrapes a company's public site live, extracts sourced facts, and turns them into a short cold email that cites those facts, instead of generic filler
 
-**Boundary — what it never does:** Never sends the email, never claims a fact that isn't present in the supplied evidence, and never fabricates or infers company details beyond the sourced input
+**Boundary — what it never does:** Never scrapes or targets a named individual (only a generic role like "Head of Go-to-Market"), never sends the email, never claims a fact that isn't present in the scraped evidence, and never fabricates or infers company details
 
 ## Run this — 60 seconds
 
 1. Codex is open at the repository root.
-2. Paste [`demo/seed-prompt.md`](demo/seed-prompt.md).
-3. Watch for: the JSON result printed with a `subject`, `email_body` that quotes the sourced fact (Cal.com's Chief of Staff, GTM hiring post), an `evidence_ledger` mapping the claim to its source URL, and `limitations` stating the draft was not sent.
-4. If nothing visible after 60 seconds, open the fallback: [`demo/output/personalized-outreach.json`](demo/output/personalized-outreach.json)
+2. Paste [`demo/seed-prompt.md`](demo/seed-prompt.md), which points at `demo/input/personalized-outreach.json` — a company URL (`https://cal.com`) plus sender details, not pre-fetched facts.
+3. Watch for: the skill running `scripts/scrape_company.py` live against that URL, then the result printed with a `subject`, `email_body` quoting a freshly scraped company fact, an `evidence_ledger` mapping the claim to its exact source URL, and `limitations` stating the draft was not sent.
+4. If nothing visible after 60 seconds, or the live scrape can't complete, open the fallback: [`demo/output/personalized-outreach.json`](demo/output/personalized-outreach.json) — the skill itself falls back automatically to the committed `demo/input/personalized-outreach-fixture.json` in that case, so it degrades gracefully rather than stalling.
 
 ## Show this — 25 seconds
 
-**Result:** A ready-to-review cold email draft (subject + body) addressed to Cal.com, referencing their public `/jobs` hiring post as the hook, plus an evidence ledger and claim audit a reviewer can check before sending anything
+**Result:** A ready-to-review cold email draft (subject + body) addressed to a generic role at Cal.com, built from a fact scraped live from their public site, plus an evidence ledger and claim audit a reviewer can check before sending anything
 
-**Evidence:** The `evidence_ledger` and `claim_audit` fields in the output map the email's one factual claim to its exact source URL (`https://cal.com/jobs`); `limitations` states the draft is unsent and the fact is user-supplied, not independently re-verified at run time
+**Evidence:** The `evidence_ledger` and `claim_audit` fields in the output map the email's one factual claim to its exact scraped source URL; `limitations` states the draft is unsent and the fact was not independently re-verified beyond the scrape itself
 
-**Fallback output was produced:** 2026-08-28, by running `python3 scripts/generate_email.py --pretty --strict demo/input/personalized-outreach.json` from the repository root against real data retrieved that day from `cal.com/jobs` via the Apify `website-content-crawler` actor
+**Fallback output was produced:** 2026-08-28, by running the full pipeline manually — `scripts/scrape_company.py --url https://cal.com` followed by `scripts/generate_email.py` on the merged result — from the repository root; this is the same command chain the skill runs live, captured once as a genuine, honest snapshot in case the live run stalls on stage
 
 ## Evals — 10 seconds
 
@@ -39,6 +39,6 @@ The organizer presents this repository for you, in 2 minutes, without having see
 
 ## Close — 5 seconds
 
-**Reusable on:** Any company for which someone supplies the same JSON schema (company name/domain, source URLs, sourced facts, contact, sender, tone/length preferences) — not limited to Cal.com
+**Reusable on:** Any public company URL — swap `company_url` in the input for another company's site and it scrapes and drafts the same way, with no schema or code changes; it also accepts a fully pre-supplied facts JSON directly, for when scraping isn't available or desired
 
-**Material limitation:** The skill never browses the web itself; it only drafts from facts a human or upstream pipeline already supplied and sourced, so its output is only as current and accurate as that input
+**Material limitation:** Without a working Apify connection, the scraper falls back to a plain HTTP fetch that can't render JavaScript-heavy sites cleanly, so fact quality on such sites is best-effort; the skill also never scrapes or targets a specific named individual, only a generic role

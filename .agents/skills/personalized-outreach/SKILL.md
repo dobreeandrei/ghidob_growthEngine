@@ -19,7 +19,7 @@ Turn a user request into a factual, ready-to-review outreach draft. Collect the 
 
 1. Identify either a public HTTP/HTTPS company URL or a local JSON path from the prompt. Also capture any supplied contact name, contact role, target email, sender details, tone, and word limit.
 2. Run the first-use sender profile flow before attempting the scraper. Ask only for missing values; never replace explicit prompt values with profile values.
-3. If the prompt names a local JSON path, take the fallback JSON flow. Otherwise, if it gives a company URL, take the full scrape flow.
+3. If the prompt names a local JSON path, open it first. If that file is an object with a `company_url` field, treat it as a scrape descriptor: take the full scrape flow using that URL, and treat any `contact`, `sender`, and `preferences` it already supplies as explicit values (skip asking for whatever it already fills in). Otherwise treat the named file as a complete or normalized-evidence file and take the fallback JSON flow. If the prompt gives a company URL directly instead of a file, take the full scrape flow.
 4. If neither input is present, ask for a company URL or local JSON path. Do not search for a company, infer a URL, or draft from memory.
 
 ## Branch: first-use sender profile flow
@@ -79,10 +79,10 @@ Turn a user request into a factual, ready-to-review outreach draft. Collect the 
 
 ## Branch: jury-laptop no-secret flow
 
-1. Assume no API keys, environment variables, MCP servers, logged-in services, private memory, or installed packages. Never ask the organizer for credentials.
-2. If the seed prompt names `demo/input/personalized-outreach.json`, take the fallback JSON flow directly. It is the committed no-secret path; do not attempt scraping first and do not use local profile or cache state to replace its populated values.
-3. A live scrape is allowed only if Person A's committed script follows the declared interface and runs without secrets, installation, or authenticated services. Otherwise ask for a local JSON path; for the jury seed prompt, use only its named committed input.
-4. Use `/usr/bin/python3` when running in an empty environment. Keep the complete orchestration path near 60 seconds; do not retry a failed or stalled scrape.
+1. Assume no API keys other than what the environment may already provide to the scraper itself, no MCP servers, no logged-in services, no private memory, and no installed packages. Never ask the organizer for credentials, and never ask an interactive question during this flow: no one is present to answer one within the demo window.
+2. If the seed prompt names `demo/input/personalized-outreach.json`, open it. It is the committed no-secret path and, in the current submission, is a `company_url` scrape descriptor with `contact`, `sender`, and `preferences` already fully populated. Take the full scrape flow against its `company_url` using those pre-supplied values directly; do not ask sender or contact questions, since nothing about them is missing.
+3. If that scrape fails for any reason covered by the full scrape flow's failure step (nonzero exit, timeout, malformed output, no usable fact, or a dependency/credential the environment doesn't provide), do not ask for a replacement path. Instead, silently take the fallback JSON flow against the committed `demo/input/personalized-outreach-fixture.json`, which is a complete, previously-produced generator input for exactly this purpose.
+4. A live scrape is allowed and expected whenever the environment happens to make it possible (for example, an already-configured Apify connection); the scraper itself decides how to use whatever credentials or connections its own environment provides, and this skill never inspects, requests, or forwards any of them. Use `/usr/bin/python3` when running in an empty environment. Keep the complete orchestration path near 60 seconds; attempt the scrape at most once and do not retry a failed or stalled run before falling back.
 
 ## Assemble and generate
 

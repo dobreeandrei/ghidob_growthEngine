@@ -1,17 +1,11 @@
 {
-  "company_name": "Cal.com",
-  "company_domain": "cal.com",
-  "source_urls": ["https://cal.com/jobs"],
-  "facts": [
-    {
-      "text": "Cal.com is hiring a Chief of Staff, GTM (NYC, hybrid) to support the Head of Go-to-Market and keep their growing GTM team moving fast.",
-      "source": "https://cal.com/jobs",
-      "category": "hiring"
-    }
-  ],
+  "company_url": "https://cal.com",
+  "source_url": "https://cal.com",
+  "note": "Representative input for the personalized-outreach skill's live company-research flow. The skill scrapes this public company URL at run time via scripts/scrape_company.py (the Apify website-content-crawler actor when an Apify connection is available, otherwise a plain HTTP fallback), extracts sourced facts, and drafts a source-cited outreach email. contact.role is a generic descriptor, never a scraped or named individual.",
   "contact": {
     "name": null,
-    "role": null
+    "role": "Head of Go-to-Market",
+    "email": null
   },
   "sender": {
     "name": "Andrei Ghita",
