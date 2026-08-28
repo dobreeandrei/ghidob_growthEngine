@@ -1,0 +1,26 @@
+{
+  "company_name": "Cal.com",
+  "company_domain": "cal.com",
+  "source_urls": ["https://cal.com/jobs"],
+  "facts": [
+    {
+      "text": "Cal.com is hiring a Chief of Staff, GTM (NYC, hybrid) to support the Head of Go-to-Market and keep their growing GTM team moving fast.",
+      "source": "https://cal.com/jobs",
+      "category": "hiring"
+    }
+  ],
+  "contact": {
+    "name": null,
+    "role": null
+  },
+  "sender": {
+    "name": "Andrei Ghita",
+    "role": "Founder",
+    "offer": "We help GTM teams send fact-backed cold outreach instead of generic templates.",
+    "call_to_action": "Open to a 15-minute call this week?"
+  },
+  "preferences": {
+    "tone": "professional",
+    "max_words": 120
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "claim_audit": [
+    {
+      "claim": "Cal.com is hiring a Chief of Staff, GTM (NYC, hybrid) to support the Head of Go-to-Market and keep their growing GTM team moving fast.",
+      "source": "https://cal.com/jobs",
+      "supported_by_fact": "Cal.com is hiring a Chief of Staff, GTM (NYC, hybrid) to support the Head of Go-to-Market and keep their growing GTM team moving fast."
+    }
+  ],
+  "email_body": "Hi,\n\nFor your work, the supplied company evidence states: Cal.com is hiring a Chief of Staff, GTM (NYC, hybrid) to support the Head of Go-to-Market and keep their growing GTM team moving fast. [1]\n\nI'm Andrei Ghita, Founder. We help GTM teams send fact-backed cold outreach instead of generic templates.\n\nOpen to a 15-minute call this week?\n\nRegards,\nAndrei Ghita",
+  "evidence_ledger": [
+    {
+      "category": "hiring",
+      "marker": "[1]",
+      "outreach_claim": "Cal.com is hiring a Chief of Staff, GTM (NYC, hybrid) to support the Head of Go-to-Market and keep their growing GTM team moving fast.",
+      "source": "https://cal.com/jobs",
+      "support_relationship": "verbatim",
+      "supporting_fact_text": "Cal.com is hiring a Chief of Staff, GTM (NYC, hybrid) to support the Head of Go-to-Market and keep their growing GTM team moving fast."
+    }
+  ],
+  "limitations": [
+    "Review-only draft; no message was sent.",
+    "The company-specific statement is copied verbatim from supplied fact [1].",
+    "Sender, contact, and offer details are user-provided and were not independently verified.",
+    "The locked input schema has no retrieval-date field, so no retrieval date was inferred."
+  ],
+  "subject": "Regarding Cal.com"
+}

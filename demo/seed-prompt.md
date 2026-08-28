@@ -1,1 +1,1 @@
-$TODO-skill-name Use the input at demo/input/TODO-file and produce TODO the observable result named in DEMO.md.
+$personalized-outreach Using the company evidence at demo/input/personalized-outreach.json, produce a personalized, source-cited cold outreach email draft.

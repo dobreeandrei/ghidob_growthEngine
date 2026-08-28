@@ -1,0 +1,14 @@
+{
+  "company": "cal-com",
+  "retrieved_at": "2026-08-28",
+  "retrieval_method": "apify/website-content-crawler (crawlerType=cheerio, maxCrawlDepth=0), run manually via the Apify console",
+  "source_urls": [
+    "https://cal.com/jobs"
+  ],
+  "items": [
+    {
+      "url": "https://cal.com/jobs",
+      "markdown": "# Work With Us and Connect a Billion People by 2031\n\nChief of Staff, GTM · NYC · Hybrid (NYC office) · $100k - $130k + equity + benefits\n\nWe are looking for a true right-hand operator to support the Head of Go-to-Market. This is not simply a channel manager or people manager role. The primary mission is to free up the Head of GTM’s time with communication, taste, and system implementation so they can focus on the highest leverage work possible. You will handle the day-to-day operations that keep our growing GTM team moving fast and in the same direction."
+    }
+  ]
+}
