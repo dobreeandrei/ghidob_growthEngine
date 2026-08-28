@@ -108,6 +108,50 @@ def evaluate_success(case: dict[str, Any], output: dict[str, Any], banned: list[
     assert company_claims == [item["supporting_fact_text"]], company_claims
 
 
+def construct_sender_completion(
+    base_input: dict[str, Any], flow: dict[str, Any]
+) -> tuple[dict[str, Any], dict[str, Any], list[str]]:
+    partial = json.loads(json.dumps(base_input))
+    for field in flow["remove_top_level_fields"]:
+        partial.pop(field, None)
+
+    sender = partial.get("sender") if isinstance(partial.get("sender"), dict) else {}
+    preferences = (
+        partial.get("preferences")
+        if isinstance(partial.get("preferences"), dict)
+        else {}
+    )
+    questions = [
+        field
+        for field in (
+            "sender.name",
+            "sender.role",
+            "sender.offer",
+            "sender.call_to_action",
+        )
+        if not isinstance(sender.get(field.split(".")[1]), str)
+        or not sender[field.split(".")[1]].strip()
+    ]
+    if preferences.get("tone") not in {"professional", "direct", "friendly"}:
+        questions.append("preferences.tone")
+
+    answers = flow["answers"]
+    completed = json.loads(json.dumps(partial))
+    completed["sender"] = {
+        key: sender.get(key) or answers[f"sender.{key}"]
+        for key in ("name", "role", "offer", "call_to_action")
+    }
+    completed["contact"] = {
+        "name": completed.get("contact", {}).get("name"),
+        "role": completed.get("contact", {}).get("role"),
+    }
+    completed["preferences"] = {
+        "tone": preferences.get("tone") or answers.get("preferences.tone", "direct"),
+        "max_words": preferences.get("max_words", 150),
+    }
+    return partial, completed, questions
+
+
 def main() -> int:
     suite = json.loads(CASES_PATH.read_text(encoding="utf-8"))
     cases = suite["cases"]
@@ -224,6 +268,43 @@ def main() -> int:
             failures.append(f"contact_name_fallback: {error}")
             print(f"FAIL contact_name_fallback: {error}")
 
+        # Simulate Codex collecting missing sender answers without interactive eval I/O.
+        flow = suite["sender_completion_flow"]
+        flow_base = next(case for case in cases if case["name"] == flow["base_case"])
+        try:
+            partial, completed, questions = construct_sender_completion(
+                flow_base["input"], flow
+            )
+            assert questions == flow["expected_question_fields"], questions
+            assert len(questions) <= 5, questions
+            assert "sender" not in partial
+            assert completed["facts"] == flow_base["input"]["facts"]
+            assert completed["source_urls"] == flow_base["input"]["source_urls"]
+            defaults = flow["expected_defaults"]
+            assert completed["preferences"]["tone"] == defaults["preferences.tone"]
+            assert completed["preferences"]["max_words"] == defaults[
+                "preferences.max_words"
+            ]
+            assert completed["contact"]["name"] == defaults["contact.name"]
+            assert completed["contact"]["role"] == defaults["contact.role"]
+            code, output, stderr, _ = invoke(
+                completed,
+                temp_dir,
+                "sender_completion_flow",
+                ("--pretty", "--strict"),
+            )
+            assert stderr == "", stderr
+            assert code == 0, (code, output)
+            assert output["email_body"].startswith("Hi,\n")
+            for field in ("name", "role", "offer", "call_to_action"):
+                assert completed["sender"][field] in output["email_body"]
+            evaluate_success({"input": completed}, output, banned)
+            print("PASS sender_completion_flow (exit 0)")
+            passed += 1
+        except (AssertionError, KeyError, TypeError) as error:
+            failures.append(f"sender_completion_flow: {error}")
+            print(f"FAIL sender_completion_flow: {error}")
+
         # Adversarial mutation: a banned sender phrase must fail without a draft.
         banned_payload = json.loads(json.dumps(success_case["input"]))
         banned_payload["sender"]["offer"] = "This is a guaranteed results program."
@@ -240,6 +321,21 @@ def main() -> int:
         except (AssertionError, KeyError, TypeError) as error:
             failures.append(f"banned_phrase_mutation: {error}")
             print(f"FAIL banned_phrase_mutation: {error}")
+
+        sent_claim_payload = json.loads(json.dumps(success_case["input"]))
+        sent_claim_payload["sender"]["call_to_action"] = "This email has been sent."
+        try:
+            code, output, stderr, _ = invoke(
+                sent_claim_payload, temp_dir, "sent_status_claim"
+            )
+            assert stderr == "", stderr
+            assert code == 3, (code, output)
+            assert_failure(output)
+            print("PASS sent_status_claim_blocked (exit 3)")
+            passed += 1
+        except (AssertionError, KeyError, TypeError) as error:
+            failures.append(f"sent_status_claim_blocked: {error}")
+            print(f"FAIL sent_status_claim_blocked: {error}")
 
     if failures:
         print(f"\n{len(failures)} eval check(s) failed.")

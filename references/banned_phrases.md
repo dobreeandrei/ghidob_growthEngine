@@ -22,4 +22,8 @@ The generator rejects any draft containing these phrases, matched case-insensiti
 - pick your brain
 - steal a few minutes
 - I know you're busy
-
+- this email was sent
+- this email has been sent
+- I sent this email
+- I have sent this email
+- we sent this email

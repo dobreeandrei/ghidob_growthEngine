@@ -104,5 +104,32 @@
       "direct",
       "friendly"
     ]
+  },
+  "sender_completion_flow": {
+    "base_case": "success_grounded_draft",
+    "remove_top_level_fields": [
+      "sender",
+      "contact",
+      "preferences"
+    ],
+    "expected_question_fields": [
+      "sender.name",
+      "sender.role",
+      "sender.offer",
+      "sender.call_to_action",
+      "preferences.tone"
+    ],
+    "answers": {
+      "sender.name": "Growth Team",
+      "sender.role": "GTM strategist",
+      "sender.offer": "I help platform teams turn verified product signals into concise outbound drafts.",
+      "sender.call_to_action": "Would a 15-minute review next week be useful?"
+    },
+    "expected_defaults": {
+      "preferences.tone": "direct",
+      "preferences.max_words": 150,
+      "contact.name": null,
+      "contact.role": null
+    }
   }
 }
