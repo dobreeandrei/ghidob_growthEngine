@@ -3,34 +3,36 @@
     {
       "name": "success_grounded_draft",
       "expected_exit": 0,
-      "fixture_source": "https://openai.com/index/introducing-gpt-5/",
+      "fixture_source": "https://docs.apify.com/actors",
       "retrieved_on": "2026-08-28",
+      "shape_note": "Locked-schema fixture suitable as normalized Apify scraper output; assembled from the cited public page, not produced by a live Actor run.",
+      "contact_note": "Avery is a synthetic demo contact.",
       "input": {
-        "company_name": "OpenAI",
-        "company_domain": "openai.com",
+        "company_name": "Apify",
+        "company_domain": "apify.com",
         "source_urls": [
-          "https://openai.com/index/introducing-gpt-5/"
+          "https://docs.apify.com/actors"
         ],
         "facts": [
           {
-            "text": "OpenAI introduced GPT-5 on August 7, 2025.",
-            "source": "https://openai.com/index/introducing-gpt-5/",
-            "category": "product"
+            "text": "Actors are serverless cloud programs that take a structured JSON input, perform a task, and optionally produce a structured output.",
+            "source": "https://docs.apify.com/actors",
+            "category": "technology"
           }
         ],
         "contact": {
-          "name": null,
-          "role": null
+          "name": "Avery",
+          "role": "Growth Lead"
         },
         "sender": {
           "name": "Growth Team",
           "role": "GTM strategist",
-          "offer": "I create source-grounded launch briefs for growth teams.",
+          "offer": "I help platform teams turn verified product signals into concise outbound drafts.",
           "call_to_action": "Would a 15-minute review next week be useful?"
         },
         "preferences": {
           "tone": "professional",
-          "max_words": 100
+          "max_words": 120
         }
       }
     },
@@ -63,19 +65,19 @@
     {
       "name": "excluded_unlisted_fact_source",
       "expected_exit": 2,
-      "fixture_source": "https://openai.com/index/introducing-gpt-5/",
+      "fixture_source": "https://docs.apify.com/actors",
       "retrieved_on": "2026-08-28",
       "input": {
-        "company_name": "OpenAI",
-        "company_domain": "openai.com",
+        "company_name": "Apify",
+        "company_domain": "apify.com",
         "source_urls": [
-          "https://openai.com/"
+          "https://apify.com/"
         ],
         "facts": [
           {
-            "text": "OpenAI introduced GPT-5 on August 7, 2025.",
-            "source": "https://openai.com/index/introducing-gpt-5/",
-            "category": "product"
+            "text": "Actors are serverless cloud programs that take a structured JSON input, perform a task, and optionally produce a structured output.",
+            "source": "https://docs.apify.com/actors",
+            "category": "technology"
           }
         ],
         "contact": {
@@ -94,5 +96,13 @@
         }
       }
     }
-  ]
+  ],
+  "tone_regression": {
+    "base_case": "success_grounded_draft",
+    "tones": [
+      "professional",
+      "direct",
+      "friendly"
+    ]
+  }
 }

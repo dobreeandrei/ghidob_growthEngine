@@ -40,6 +40,10 @@ class InputError(ValueError):
     """Raised when input does not match the locked schema."""
 
 
+class CliError(ValueError):
+    """Raised when command-line arguments are invalid."""
+
+
 def failure(reason: str, code: int) -> tuple[dict[str, Any], int]:
     return (
         {
@@ -47,6 +51,7 @@ def failure(reason: str, code: int) -> tuple[dict[str, Any], int]:
             "subject": None,
             "email_body": None,
             "evidence_ledger": [],
+            "claim_audit": [],
             "limitations": [
                 reason,
                 "No outreach draft was produced or sent.",
@@ -120,7 +125,8 @@ def validate_input(raw: Any) -> dict[str, Any]:
         category = require_string(fact["category"], f"facts[{index}].category")
         if source not in source_urls:
             raise InputError(
-                f"facts[{index}].source must exactly match an entry in source_urls"
+                f"facts[{index}].source {source!r} is not listed in source_urls; "
+                f"each fact source must exactly match one of {len(source_urls)} declared URL(s)"
             )
         if category not in FACT_CATEGORIES:
             raise InputError(f"facts[{index}].category is not allowed")
@@ -178,26 +184,49 @@ def word_count(text: str) -> int:
     return len(WORD_PATTERN.findall(text))
 
 
+def tone_parts(tone: str, contact_name: str | None, contact_role: str | None) -> tuple[str, str, str, str]:
+    greeting = f"Hi {contact_name}," if contact_name else "Hi,"
+    role = f"your work as {contact_role}" if contact_role else "your work"
+    if tone == "friendly":
+        return (
+            greeting,
+            f"With {role} in mind, this sourced company fact stood out:",
+            "A sourced note about {company_name}",
+            "Best,",
+        )
+    if tone == "direct":
+        return (
+            greeting,
+            f"Relevant to {role}:",
+            "{company_name}: sourced note",
+            "Thanks,",
+        )
+    return (
+        greeting,
+        f"For {role}, the supplied company evidence states:",
+        "Regarding {company_name}",
+        "Regards,",
+    )
+
+
 def build_draft(data: dict[str, Any], banned_phrases: list[str]) -> tuple[dict[str, Any], int]:
     if not data["facts"]:
         return failure(
-            "Insufficient evidence: facts must contain at least one sourced company fact.",
+            "Insufficient evidence: facts is empty; provide at least one fact with "
+            "nonempty text, an allowed category, and a source listed in source_urls.",
             EXIT_INSUFFICIENT_EVIDENCE,
         )
 
     contact_name = data["contact"]["name"]
+    contact_role = data["contact"]["role"]
     tone = data["preferences"]["tone"]
-    if tone == "friendly":
-        greeting = f"Hi {contact_name}," if contact_name else "Hi,"
-        fact_prefix = "I saw this sourced company fact:"
-    elif tone == "direct":
-        greeting = f"{contact_name}," if contact_name else "Hello,"
-        fact_prefix = "Relevant sourced company fact:"
-    else:
-        greeting = f"Hello {contact_name}," if contact_name else "Hello,"
-        fact_prefix = "Your sourced company data states:"
+    greeting, fact_prefix, subject_template, signoff = tone_parts(
+        tone, contact_name, contact_role
+    )
     sender = data["sender"]
-    subject = f"Regarding {data['company_name']}"
+    subject = subject_template.format(company_name=data["company_name"])
+    blocked_by_phrases = 0
+    blocked_by_length: list[int] = []
 
     for fact in data["facts"]:
         body = (
@@ -205,15 +234,22 @@ def build_draft(data: dict[str, Any], banned_phrases: list[str]) -> tuple[dict[s
             f"{fact_prefix} {fact['text']} [1]\n\n"
             f"I'm {sender['name']}, {sender['role']}. {sender['offer']}\n\n"
             f"{sender['call_to_action']}\n\n"
-            f"Regards,\n{sender['name']}"
+            f"{signoff}\n{sender['name']}"
         )
         if contains_banned_phrase(subject, banned_phrases) or contains_banned_phrase(
             body, banned_phrases
         ):
+            blocked_by_phrases += 1
             continue
         count = word_count(body)
         if count > data["preferences"]["max_words"] or count >= 150:
+            blocked_by_length.append(count)
             continue
+        claim_mapping = {
+            "claim": fact["text"],
+            "supported_by_fact": fact["text"],
+            "source": fact["source"],
+        }
         return (
             {
                 "subject": subject,
@@ -221,11 +257,14 @@ def build_draft(data: dict[str, Any], banned_phrases: list[str]) -> tuple[dict[s
                 "evidence_ledger": [
                     {
                         "marker": "[1]",
-                        "fact": fact["text"],
+                        "outreach_claim": fact["text"],
+                        "supporting_fact_text": fact["text"],
                         "source": fact["source"],
                         "category": fact["category"],
+                        "support_relationship": "verbatim",
                     }
                 ],
+                "claim_audit": [claim_mapping],
                 "limitations": [
                     "Review-only draft; no message was sent.",
                     "The company-specific statement is copied verbatim from supplied fact [1].",
@@ -236,8 +275,19 @@ def build_draft(data: dict[str, Any], banned_phrases: list[str]) -> tuple[dict[s
             EXIT_SUCCESS,
         )
 
+    reasons = []
+    if blocked_by_phrases:
+        reasons.append(
+            f"{blocked_by_phrases} fact candidate(s) produced a banned phrase in the subject or body"
+        )
+    if blocked_by_length:
+        reasons.append(
+            f"{len(blocked_by_length)} fact candidate(s) produced {min(blocked_by_length)} "
+            f"words or more; preferences.max_words is {data['preferences']['max_words']} "
+            "and the hard limit is fewer than 150 words"
+        )
     return failure(
-        "Insufficient usable evidence: no supplied fact can produce a draft within the word limit and banned-phrase rules.",
+        "Blocked draft: " + "; ".join(reasons) + ".",
         EXIT_INSUFFICIENT_EVIDENCE,
     )
 
@@ -246,26 +296,56 @@ def read_input(path: str) -> Any:
     try:
         return json.loads(Path(path).read_text(encoding="utf-8"))
     except OSError as error:
-        raise InputError(f"cannot read input file: {error.strerror or error}") from error
+        raise InputError(
+            f"cannot read input file {path!r}: {error.strerror or error}"
+        ) from error
     except json.JSONDecodeError as error:
-        raise InputError(f"input is not valid JSON: {error.msg}") from error
+        raise InputError(
+            f"input file {path!r} is not valid JSON at line {error.lineno}, "
+            f"column {error.colno}: {error.msg}"
+        ) from error
+
+
+def parse_cli(argv: list[str]) -> tuple[str, bool, bool]:
+    input_path = None
+    pretty = False
+    strict = False
+    for argument in argv[1:]:
+        if argument == "--pretty":
+            pretty = True
+        elif argument == "--strict":
+            strict = True
+        elif argument.startswith("-"):
+            raise CliError(
+                f"unknown option {argument!r}; allowed options are --pretty and --strict"
+            )
+        elif input_path is None:
+            input_path = argument
+        else:
+            raise CliError(
+                f"expected exactly one input JSON path, but also received {argument!r}"
+            )
+    if input_path is None:
+        raise CliError(
+            "missing input JSON path; usage: generate_email.py [--pretty] [--strict] <input.json>"
+        )
+    return input_path, pretty, strict
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 2:
-        result, code = failure(
-            "Malformed input: usage is generate_email.py <input.json>.",
-            EXIT_INVALID_INPUT,
-        )
-    else:
-        try:
-            data = validate_input(read_input(argv[1]))
-            result, code = build_draft(data, load_banned_phrases())
-        except InputError as error:
-            result, code = failure(f"Malformed input: {error}.", EXIT_INVALID_INPUT)
-        except (OSError, RuntimeError) as error:
-            result, code = failure(f"Generator configuration error: {error}.", EXIT_INVALID_INPUT)
-    print(json.dumps(result, indent=2, ensure_ascii=False, sort_keys=True))
+    pretty = "--pretty" in argv[1:]
+    try:
+        input_path, pretty, _strict = parse_cli(argv)
+        data = validate_input(read_input(input_path))
+        result, code = build_draft(data, load_banned_phrases())
+    except CliError as error:
+        result, code = failure(f"Invalid command line: {error}.", EXIT_INVALID_INPUT)
+    except InputError as error:
+        result, code = failure(f"Invalid input: {error}.", EXIT_INVALID_INPUT)
+    except (OSError, RuntimeError) as error:
+        result, code = failure(f"Generator configuration error: {error}.", EXIT_INVALID_INPUT)
+    formatting = {"indent": 2} if pretty else {"separators": (",", ":")}
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True, **formatting))
     return code
 
 
