@@ -17,10 +17,10 @@ The organizer presents this repository for you, in 2 minutes, without having see
 ## Run this — 60 seconds
 
 1. Codex is open at the repository root.
-2. Paste [`demo/seed-prompt.md`](demo/seed-prompt.md), which points at `demo/input/personalized-outreach.json` — a company URL (`https://cal.com`) with no sender identity pre-filled.
-3. **Be ready to answer**: the skill will ask, in one short message, for your name, role, offer, and call-to-action (it has no idea who you are — that's the point). Answer briefly; it asks once, not back-and-forth.
-4. Watch for: the skill running `scripts/scrape_company.py` live against that URL, then the result printed with a `subject`, `email_body` quoting a freshly scraped company fact and your own answers, an `evidence_ledger` mapping the claim to its exact source URL, and `limitations` stating the draft was not sent.
-5. If nothing visible after 60 seconds, or the live scrape can't complete, open the fallback: [`demo/output/personalized-outreach.json`](demo/output/personalized-outreach.json) — the skill itself falls back automatically to the committed `demo/input/personalized-outreach-fixture.json` in that case (a scrape failure, unlike a sender question, isn't something the presenter can fix by answering), so it degrades gracefully rather than stalling.
+2. Paste [`demo/seed-prompt.md`](demo/seed-prompt.md), which points at `demo/input/personalized-outreach.json` — a company URL (`https://cal.com`) with sender identity pre-filled as Andrei's for this specific run.
+3. **Say out loud:** "For this run, the sender identity (name/role/offer) is pre-filled with mine — that's a fixed choice for the demo, not a limitation of the skill. On any other input, or for anyone else running it, the skill asks for that live, on the spot." This is disclosed honestly here, not hidden.
+4. Watch for: the skill running `scripts/scrape_company.py` live against that URL, then the result printed with a `subject`, `email_body` quoting a freshly scraped company fact, an `evidence_ledger` mapping the claim to its exact source URL, and `limitations` stating the draft was not sent.
+5. If nothing visible after 60 seconds, or the live scrape can't complete, open the fallback: [`demo/output/personalized-outreach.json`](demo/output/personalized-outreach.json) — the skill itself falls back automatically to the committed `demo/input/personalized-outreach-fixture.json` in that case, so it degrades gracefully rather than stalling.
 
 ## Show this — 25 seconds
 
@@ -42,4 +42,4 @@ The organizer presents this repository for you, in 2 minutes, without having see
 
 **Reusable on:** Any public company URL — swap `company_url` in the input for another company's site and it scrapes and drafts the same way, with no schema or code changes; it also accepts a fully pre-supplied facts JSON directly, for when scraping isn't available or desired
 
-**Material limitation:** Without a working Apify connection, the scraper falls back to a plain HTTP fetch that can't render JavaScript-heavy sites cleanly, so fact quality on such sites is best-effort; the skill also never scrapes or targets a specific named individual, only a generic role
+**Material limitation:** Without a working Apify connection, the scraper falls back to a plain HTTP fetch that can't render JavaScript-heavy sites cleanly, so fact quality on such sites is best-effort; the skill also never scrapes or targets a specific named individual, only a generic role. The sender identity in this specific demo's committed input is pre-filled with the presenter's own details rather than asked live — a deliberate choice for this run, disclosed here and verbally, not a capability gap: the skill's general first-use flow does ask anyone else for their own details.
