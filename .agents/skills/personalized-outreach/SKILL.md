@@ -35,6 +35,8 @@ Create a reviewable outreach draft from supplied evidence. Do not browse, enrich
 - Require HTTP or HTTPS URLs and require every fact's `source` to exactly match an entry in `source_urls`.
 - Require an allowed fact category, tone, and a positive integer `max_words` no greater than 150.
 - Require at least one usable fact. Copy a company fact verbatim; never infer, combine, embellish, or imply another company claim.
+- Use that fact naturally as the reason for outreach. Never put `supplied evidence`, `supplied facts`, or `company evidence` in the email body.
+- Base the subject on the company and selected fact category; do not add an unsupported event, outcome, or interpretation.
 - Greet a named contact by name; otherwise use `Hi,`. When a role is supplied, reference only the role itself to tailor the transition, without asserting needs, priorities, or responsibilities.
 - Exclude any draft containing a case-insensitive banned phrase from `references/banned_phrases.md`. If no supplied fact is usable, report insufficient evidence.
 - Keep `email_body` at or below the requested limit and always below 150 words. If the requested limit cannot accommodate a grounded draft, report failure instead of truncating or inventing text.

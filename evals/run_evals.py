@@ -17,6 +17,7 @@ CASES_PATH = ROOT / "evals" / "test_companies.json"
 GENERATOR_PATH = ROOT / "scripts" / "generate_email.py"
 BANNED_PATH = ROOT / "references" / "banned_phrases.md"
 WORD_PATTERN = re.compile(r"\b[\w’'-]+\b", re.UNICODE)
+ROBOTIC_EMAIL_PHRASES = ("supplied evidence", "supplied facts", "company evidence")
 
 
 def load_banned_phrases() -> list[str]:
@@ -76,6 +77,7 @@ def evaluate_success(case: dict[str, Any], output: dict[str, Any], banned: list[
     assert count < 150, count
     combined_draft = f"{output['subject']}\n{body}".casefold()
     assert all(phrase not in combined_draft for phrase in banned)
+    assert all(phrase not in body.casefold() for phrase in ROBOTIC_EMAIL_PHRASES)
 
     ledger = output["evidence_ledger"]
     assert len(ledger) == 1, ledger
@@ -93,6 +95,10 @@ def evaluate_success(case: dict[str, Any], output: dict[str, Any], banned: list[
     assert item["support_relationship"] == "verbatim", item
     assert item["supporting_fact_text"] in body, "used fact must appear verbatim in body"
     assert item["marker"] in body, "ledger marker must appear in body"
+    if item["category"] == "other":
+        assert payload["company_name"].casefold() in output["subject"].casefold()
+    else:
+        assert item["category"] in output["subject"].casefold(), output["subject"]
 
     audit = output["claim_audit"]
     assert audit == [

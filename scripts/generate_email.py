@@ -184,29 +184,55 @@ def word_count(text: str) -> int:
     return len(WORD_PATTERN.findall(text))
 
 
-def tone_parts(tone: str, contact_name: str | None, contact_role: str | None) -> tuple[str, str, str, str]:
+def tone_parts(
+    tone: str, contact_name: str | None, contact_role: str | None
+) -> tuple[str, str, str | None, str]:
     greeting = f"Hi {contact_name}," if contact_name else "Hi,"
-    role = f"your work as {contact_role}" if contact_role else "your work"
     if tone == "friendly":
         return (
             greeting,
-            f"With {role} in mind, this sourced company fact stood out:",
-            "A sourced note about {company_name}",
+            "I came across this:",
+            f"With your {contact_role} role in mind, I thought I'd reach out."
+            if contact_role
+            else None,
             "Best,",
         )
     if tone == "direct":
         return (
             greeting,
-            f"Relevant to {role}:",
-            "{company_name}: sourced note",
+            "Saw that",
+            f"I'm reaching out to you in your {contact_role} role."
+            if contact_role
+            else None,
             "Thanks,",
         )
     return (
         greeting,
-        f"For {role}, the supplied company evidence states:",
-        "Regarding {company_name}",
+        "I noticed that",
+        f"Given your {contact_role} role, I wanted to reach out."
+        if contact_role
+        else None,
         "Regards,",
     )
+
+
+def build_subject(tone: str, company_name: str, category: str) -> str:
+    contexts = {
+        "product": "product",
+        "hiring": "hiring",
+        "news": "company news",
+        "technology": "technology",
+        "leadership": "leadership",
+        "other": "company note",
+    }
+    context = contexts[category]
+    if tone == "friendly":
+        if category == "other":
+            return f"A note for {company_name}"
+        return f"{context.capitalize()} at {company_name}"
+    if tone == "direct":
+        return f"{company_name}: {context}"
+    return f"{company_name} — {context}"
 
 
 def build_draft(data: dict[str, Any], banned_phrases: list[str]) -> tuple[dict[str, Any], int]:
@@ -220,18 +246,20 @@ def build_draft(data: dict[str, Any], banned_phrases: list[str]) -> tuple[dict[s
     contact_name = data["contact"]["name"]
     contact_role = data["contact"]["role"]
     tone = data["preferences"]["tone"]
-    greeting, fact_prefix, subject_template, signoff = tone_parts(
+    greeting, fact_lead, role_line, signoff = tone_parts(
         tone, contact_name, contact_role
     )
     sender = data["sender"]
-    subject = subject_template.format(company_name=data["company_name"])
     blocked_by_phrases = 0
     blocked_by_length: list[int] = []
 
     for fact in data["facts"]:
+        subject = build_subject(tone, data["company_name"], fact["category"])
+        role_paragraph = f"\n\n{role_line}" if role_line else ""
         body = (
             f"{greeting}\n\n"
-            f"{fact_prefix} {fact['text']} [1]\n\n"
+            f"{fact_lead} {fact['text']} [1]"
+            f"{role_paragraph}\n\n"
             f"I'm {sender['name']}, {sender['role']}. {sender['offer']}\n\n"
             f"{sender['call_to_action']}\n\n"
             f"{signoff}\n{sender['name']}"
