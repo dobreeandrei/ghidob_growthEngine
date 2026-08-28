@@ -1,0 +1,98 @@
+{
+  "cases": [
+    {
+      "name": "success_grounded_draft",
+      "expected_exit": 0,
+      "fixture_source": "https://openai.com/index/introducing-gpt-5/",
+      "retrieved_on": "2026-08-28",
+      "input": {
+        "company_name": "OpenAI",
+        "company_domain": "openai.com",
+        "source_urls": [
+          "https://openai.com/index/introducing-gpt-5/"
+        ],
+        "facts": [
+          {
+            "text": "OpenAI introduced GPT-5 on August 7, 2025.",
+            "source": "https://openai.com/index/introducing-gpt-5/",
+            "category": "product"
+          }
+        ],
+        "contact": {
+          "name": null,
+          "role": null
+        },
+        "sender": {
+          "name": "Growth Team",
+          "role": "GTM strategist",
+          "offer": "I create source-grounded launch briefs for growth teams.",
+          "call_to_action": "Would a 15-minute review next week be useful?"
+        },
+        "preferences": {
+          "tone": "professional",
+          "max_words": 100
+        }
+      }
+    },
+    {
+      "name": "insufficient_evidence",
+      "expected_exit": 3,
+      "input": {
+        "company_name": "Blank Slate Labs",
+        "company_domain": "blankslate.example",
+        "source_urls": [
+          "https://blankslate.example/about"
+        ],
+        "facts": [],
+        "contact": {
+          "name": null,
+          "role": null
+        },
+        "sender": {
+          "name": "Growth Team",
+          "role": "GTM strategist",
+          "offer": "I create source-grounded launch briefs for growth teams.",
+          "call_to_action": "Would a short review next week be useful?"
+        },
+        "preferences": {
+          "tone": "direct",
+          "max_words": 100
+        }
+      }
+    },
+    {
+      "name": "excluded_unlisted_fact_source",
+      "expected_exit": 2,
+      "fixture_source": "https://openai.com/index/introducing-gpt-5/",
+      "retrieved_on": "2026-08-28",
+      "input": {
+        "company_name": "OpenAI",
+        "company_domain": "openai.com",
+        "source_urls": [
+          "https://openai.com/"
+        ],
+        "facts": [
+          {
+            "text": "OpenAI introduced GPT-5 on August 7, 2025.",
+            "source": "https://openai.com/index/introducing-gpt-5/",
+            "category": "product"
+          }
+        ],
+        "contact": {
+          "name": null,
+          "role": null
+        },
+        "sender": {
+          "name": "Growth Team",
+          "role": "GTM strategist",
+          "offer": "I create source-grounded launch briefs for growth teams.",
+          "call_to_action": "Would a short review next week be useful?"
+        },
+        "preferences": {
+          "tone": "friendly",
+          "max_words": 100
+        }
+      }
+    }
+  ]
+}
