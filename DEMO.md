@@ -17,9 +17,10 @@ The organizer presents this repository for you, in 2 minutes, without having see
 ## Run this — 60 seconds
 
 1. Codex is open at the repository root.
-2. Paste [`demo/seed-prompt.md`](demo/seed-prompt.md), which points at `demo/input/personalized-outreach.json` — a company URL (`https://cal.com`) plus sender details, not pre-fetched facts.
-3. Watch for: the skill running `scripts/scrape_company.py` live against that URL, then the result printed with a `subject`, `email_body` quoting a freshly scraped company fact, an `evidence_ledger` mapping the claim to its exact source URL, and `limitations` stating the draft was not sent.
-4. If nothing visible after 60 seconds, or the live scrape can't complete, open the fallback: [`demo/output/personalized-outreach.json`](demo/output/personalized-outreach.json) — the skill itself falls back automatically to the committed `demo/input/personalized-outreach-fixture.json` in that case, so it degrades gracefully rather than stalling.
+2. Paste [`demo/seed-prompt.md`](demo/seed-prompt.md), which points at `demo/input/personalized-outreach.json` — a company URL (`https://cal.com`) with no sender identity pre-filled.
+3. **Be ready to answer**: the skill will ask, in one short message, for your name, role, offer, and call-to-action (it has no idea who you are — that's the point). Answer briefly; it asks once, not back-and-forth.
+4. Watch for: the skill running `scripts/scrape_company.py` live against that URL, then the result printed with a `subject`, `email_body` quoting a freshly scraped company fact and your own answers, an `evidence_ledger` mapping the claim to its exact source URL, and `limitations` stating the draft was not sent.
+5. If nothing visible after 60 seconds, or the live scrape can't complete, open the fallback: [`demo/output/personalized-outreach.json`](demo/output/personalized-outreach.json) — the skill itself falls back automatically to the committed `demo/input/personalized-outreach-fixture.json` in that case (a scrape failure, unlike a sender question, isn't something the presenter can fix by answering), so it degrades gracefully rather than stalling.
 
 ## Show this — 25 seconds
 

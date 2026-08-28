@@ -1,17 +1,11 @@
 {
   "company_url": "https://cal.com",
   "source_url": "https://cal.com",
-  "note": "Representative input for the personalized-outreach skill's live company-research flow. The skill scrapes this public company URL at run time via scripts/scrape_company.py (the Apify website-content-crawler actor when an Apify connection is available, otherwise a plain HTTP fallback), extracts sourced facts, and drafts a source-cited outreach email. contact.role is a generic descriptor, never a scraped or named individual.",
+  "note": "Representative input for the personalized-outreach skill's live company-research flow. The skill scrapes this public company URL at run time via scripts/scrape_company.py (the Apify website-content-crawler actor when an Apify connection is available, otherwise a plain HTTP fallback), extracts sourced facts, asks whoever is running it for their own sender details on the spot, then drafts a source-cited outreach email. contact.role is a generic descriptor, never a scraped or named individual. sender is intentionally left unset here so the skill demonstrates asking for it live, per the first-use sender profile flow in SKILL.md.",
   "contact": {
     "name": null,
     "role": "Head of Go-to-Market",
     "email": null
-  },
-  "sender": {
-    "name": "Andrei Ghita",
-    "role": "Founder",
-    "offer": "We help GTM teams send fact-backed cold outreach instead of generic templates.",
-    "call_to_action": "Open to a 15-minute call this week?"
   },
   "preferences": {
     "tone": "professional",
