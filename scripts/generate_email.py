@@ -28,7 +28,7 @@ TOP_LEVEL_KEYS = {
     "preferences",
 }
 FACT_KEYS = {"text", "source", "category"}
-CONTACT_KEYS = {"name", "role"}
+CONTACT_KEYS = {"name", "role", "email"}
 SENDER_KEYS = {"name", "role", "offer", "call_to_action"}
 PREFERENCE_KEYS = {"tone", "max_words"}
 FACT_CATEGORIES = {"product", "hiring", "news", "technology", "leadership", "other"}
@@ -74,6 +74,24 @@ def require_object(value: Any, path: str, keys: set[str]) -> dict[str, Any]:
         if extra:
             details.append(f"unexpected {extra}")
         raise InputError(f"{path} has invalid fields: {', '.join(details)}")
+    return value
+
+
+def require_contact_object(value: Any) -> dict[str, Any]:
+    """Validate contact fields while allowing the new target email to be omitted."""
+    if not isinstance(value, dict):
+        raise InputError("contact must be an object")
+    actual = set(value)
+    required = {"name", "role"}
+    missing = sorted(required - actual)
+    extra = sorted(actual - CONTACT_KEYS)
+    if missing or extra:
+        details = []
+        if missing:
+            details.append(f"missing {missing}")
+        if extra:
+            details.append(f"unexpected {extra}")
+        raise InputError(f"contact has invalid fields: {', '.join(details)}")
     return value
 
 
@@ -132,9 +150,10 @@ def validate_input(raw: Any) -> dict[str, Any]:
             raise InputError(f"facts[{index}].category is not allowed")
         facts.append({"text": text, "source": source, "category": category})
 
-    contact = require_object(data["contact"], "contact", CONTACT_KEYS)
+    contact = require_contact_object(data["contact"])
     contact_name = require_nullable_string(contact["name"], "contact.name")
     contact_role = require_nullable_string(contact["role"], "contact.role")
+    contact_email = require_nullable_string(contact.get("email"), "contact.email")
 
     sender = require_object(data["sender"], "sender", SENDER_KEYS)
     clean_sender = {
@@ -156,7 +175,11 @@ def validate_input(raw: Any) -> dict[str, Any]:
         "company_domain": company_domain,
         "source_urls": source_urls,
         "facts": facts,
-        "contact": {"name": contact_name, "role": contact_role},
+        "contact": {
+            "name": contact_name,
+            "role": contact_role,
+            "email": contact_email,
+        },
         "sender": clean_sender,
         "preferences": {"tone": tone, "max_words": max_words},
     }
@@ -334,18 +357,51 @@ def read_input(path: str) -> Any:
         ) from error
 
 
-def parse_cli(argv: list[str]) -> tuple[str, bool, bool]:
+def render_human(result: dict[str, Any], target_email: str | None) -> str:
+    """Render a reviewable result without changing the machine-readable payload."""
+    lines = [f"Target: {target_email or 'not provided'}"]
+    if result.get("status") == "failure":
+        lines.extend(["Status: failure", "", "Limitations:"])
+        lines.extend(f"- {item}" for item in result["limitations"])
+        return "\n".join(lines)
+
+    lines.extend(
+        [
+            f"Subject: {result['subject']}",
+            "",
+            result["email_body"],
+            "",
+            "Evidence:",
+        ]
+    )
+    for item in result["evidence_ledger"]:
+        lines.extend(
+            [
+                f"- {item['marker']} {item['supporting_fact_text']}",
+                f"  Source: {item['source']}",
+            ]
+        )
+    lines.append("")
+    lines.append("Limitations:")
+    lines.extend(f"- {item}" for item in result["limitations"])
+    return "\n".join(lines)
+
+
+def parse_cli(argv: list[str]) -> tuple[str, bool, bool, bool]:
     input_path = None
     pretty = False
     strict = False
+    json_output = False
     for argument in argv[1:]:
         if argument == "--pretty":
             pretty = True
         elif argument == "--strict":
             strict = True
+        elif argument == "--json":
+            json_output = True
         elif argument.startswith("-"):
             raise CliError(
-                f"unknown option {argument!r}; allowed options are --pretty and --strict"
+                f"unknown option {argument!r}; allowed options are --json, --pretty, and --strict"
             )
         elif input_path is None:
             input_path = argument
@@ -355,16 +411,20 @@ def parse_cli(argv: list[str]) -> tuple[str, bool, bool]:
             )
     if input_path is None:
         raise CliError(
-            "missing input JSON path; usage: generate_email.py [--pretty] [--strict] <input.json>"
+            "missing input JSON path; usage: generate_email.py "
+            "[--json] [--pretty] [--strict] <input.json>"
         )
-    return input_path, pretty, strict
+    return input_path, pretty, strict, json_output
 
 
 def main(argv: list[str]) -> int:
     pretty = "--pretty" in argv[1:]
+    json_output = "--json" in argv[1:]
+    target_email = None
     try:
-        input_path, pretty, _strict = parse_cli(argv)
+        input_path, pretty, _strict, json_output = parse_cli(argv)
         data = validate_input(read_input(input_path))
+        target_email = data["contact"]["email"]
         result, code = build_draft(data, load_banned_phrases())
     except CliError as error:
         result, code = failure(f"Invalid command line: {error}.", EXIT_INVALID_INPUT)
@@ -372,8 +432,11 @@ def main(argv: list[str]) -> int:
         result, code = failure(f"Invalid input: {error}.", EXIT_INVALID_INPUT)
     except (OSError, RuntimeError) as error:
         result, code = failure(f"Generator configuration error: {error}.", EXIT_INVALID_INPUT)
-    formatting = {"indent": 2} if pretty else {"separators": (",", ":")}
-    print(json.dumps(result, ensure_ascii=False, sort_keys=True, **formatting))
+    if json_output:
+        formatting = {"indent": 2} if pretty else {"separators": (",", ":")}
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True, **formatting))
+    else:
+        print(render_human(result, target_email))
     return code
 
 

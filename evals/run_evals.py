@@ -37,7 +37,7 @@ def invoke(
     input_path = directory / f"{name}.json"
     input_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     completed = subprocess.run(
-        [sys.executable, str(GENERATOR_PATH), *flags, str(input_path)],
+        [sys.executable, str(GENERATOR_PATH), "--json", *flags, str(input_path)],
         cwd=ROOT,
         text=True,
         capture_output=True,
@@ -50,6 +50,24 @@ def invoke(
             f"generator stdout was not JSON: {error}; stderr={completed.stderr!r}"
         ) from error
     return completed.returncode, output, completed.stderr, completed.stdout
+
+
+def invoke_human(
+    payload: Any,
+    directory: Path,
+    name: str,
+    flags: tuple[str, ...] = (),
+) -> tuple[int, str, str]:
+    input_path = directory / f"{name}.json"
+    input_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    completed = subprocess.run(
+        [sys.executable, str(GENERATOR_PATH), *flags, str(input_path)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    return completed.returncode, completed.stdout, completed.stderr
 
 
 def assert_failure(output: dict[str, Any]) -> None:
@@ -115,11 +133,12 @@ def evaluate_success(case: dict[str, Any], output: dict[str, Any], banned: list[
 
 
 def construct_sender_completion(
-    base_input: dict[str, Any], flow: dict[str, Any]
+    base_input: dict[str, Any], flow: dict[str, Any], remove_declared: bool = True
 ) -> tuple[dict[str, Any], dict[str, Any], list[str]]:
     partial = json.loads(json.dumps(base_input))
-    for field in flow["remove_top_level_fields"]:
-        partial.pop(field, None)
+    if remove_declared:
+        for field in flow["remove_top_level_fields"]:
+            partial.pop(field, None)
 
     sender = partial.get("sender") if isinstance(partial.get("sender"), dict) else {}
     preferences = (
@@ -138,6 +157,9 @@ def construct_sender_completion(
         if not isinstance(sender.get(field.split(".")[1]), str)
         or not sender[field.split(".")[1]].strip()
     ]
+    contact = partial.get("contact") if isinstance(partial.get("contact"), dict) else {}
+    if not isinstance(contact.get("email"), str) or not contact["email"].strip():
+        questions.append("contact.email")
     if preferences.get("tone") not in {"professional", "direct", "friendly"}:
         questions.append("preferences.tone")
 
@@ -148,8 +170,9 @@ def construct_sender_completion(
         for key in ("name", "role", "offer", "call_to_action")
     }
     completed["contact"] = {
-        "name": completed.get("contact", {}).get("name"),
-        "role": completed.get("contact", {}).get("role"),
+        "name": contact.get("name"),
+        "role": contact.get("role"),
+        "email": contact.get("email"),
     }
     completed["preferences"] = {
         "tone": preferences.get("tone") or answers.get("preferences.tone", "direct"),
@@ -174,7 +197,7 @@ def main() -> int:
                 )
                 assert stderr == "", stderr
                 assert code == case["expected_exit"], (code, output)
-                assert stdout.count("\n") == 1, "default JSON must be compact"
+                assert stdout.count("\n") == 1, "--json must be compact by default"
                 repeat_code, repeat_output, repeat_stderr, _ = invoke(
                     case["input"], temp_dir, f"{case['name']}_repeat"
                 )
@@ -205,7 +228,7 @@ def main() -> int:
         success_case = next(case for case in cases if case["expected_exit"] == 0)
 
         # --strict is an explicit no-op because default validation is already strict;
-        # --pretty changes formatting only.
+        # --pretty changes JSON formatting only.
         try:
             default_code, default_output, _, _ = invoke(
                 success_case["input"], temp_dir, "cli_default"
@@ -224,6 +247,31 @@ def main() -> int:
         except (AssertionError, KeyError, TypeError) as error:
             failures.append(f"cli_pretty_strict_parity: {error}")
             print(f"FAIL cli_pretty_strict_parity: {error}")
+
+        # Human-readable output is the default and includes the review target.
+        try:
+            human_code, human_stdout, human_stderr = invoke_human(
+                success_case["input"], temp_dir, "cli_human_default", ("--strict",)
+            )
+            assert human_stderr == "", human_stderr
+            assert human_code == 0, human_stdout
+            assert human_stdout.startswith(
+                f"Target: {success_case['input']['contact']['email']}\nSubject: "
+            ), human_stdout
+            assert success_case["input"]["facts"][0]["text"] in human_stdout
+            assert "\nEvidence:\n" in human_stdout, human_stdout
+            assert "\nLimitations:\n" in human_stdout, human_stdout
+            try:
+                json.loads(human_stdout)
+            except json.JSONDecodeError:
+                pass
+            else:
+                raise AssertionError("default output must not be JSON")
+            print("PASS cli_human_default (exit 0)")
+            passed += 1
+        except (AssertionError, KeyError, TypeError) as error:
+            failures.append(f"cli_human_default: {error}")
+            print(f"FAIL cli_human_default: {error}")
 
         # Tone outputs must be observably distinct without changing their evidence.
         tone_outputs = {}
@@ -259,6 +307,7 @@ def main() -> int:
         # Missing contact name must always use the exact neutral fallback.
         fallback_payload = json.loads(json.dumps(success_case["input"]))
         fallback_payload["contact"]["name"] = None
+        fallback_payload["contact"].pop("email")
         try:
             code, output, stderr, _ = invoke(
                 fallback_payload, temp_dir, "contact_name_fallback"
@@ -268,6 +317,12 @@ def main() -> int:
             assert output["email_body"].startswith("Hi,\n"), output["email_body"]
             assert fallback_payload["contact"]["role"] in output["email_body"]
             evaluate_success({"input": fallback_payload}, output, banned)
+            human_code, human_stdout, human_stderr = invoke_human(
+                fallback_payload, temp_dir, "contact_email_fallback"
+            )
+            assert human_stderr == "", human_stderr
+            assert human_code == 0, human_stdout
+            assert human_stdout.startswith("Target: not provided\n"), human_stdout
             print("PASS contact_name_fallback (exit 0)")
             passed += 1
         except (AssertionError, KeyError, TypeError) as error:
@@ -282,7 +337,7 @@ def main() -> int:
                 flow_base["input"], flow
             )
             assert questions == flow["expected_question_fields"], questions
-            assert len(questions) <= 5, questions
+            assert len(questions) == 6, questions
             assert "sender" not in partial
             assert completed["facts"] == flow_base["input"]["facts"]
             assert completed["source_urls"] == flow_base["input"]["source_urls"]
@@ -293,6 +348,7 @@ def main() -> int:
             ]
             assert completed["contact"]["name"] == defaults["contact.name"]
             assert completed["contact"]["role"] == defaults["contact.role"]
+            assert completed["contact"]["email"] == defaults["contact.email"]
             code, output, stderr, _ = invoke(
                 completed,
                 temp_dir,
@@ -310,6 +366,38 @@ def main() -> int:
         except (AssertionError, KeyError, TypeError) as error:
             failures.append(f"sender_completion_flow: {error}")
             print(f"FAIL sender_completion_flow: {error}")
+
+        # An approved profile reuses sender values and tone, but never target data.
+        try:
+            profile = {
+                "sender": completed["sender"],
+                "preferences": {"tone": completed["preferences"]["tone"]},
+            }
+            assert set(profile) == set(flow["profile_fields"]), profile
+            assert set(profile["sender"]) == set(flow["profile_fields"]["sender"])
+            assert set(profile["preferences"]) == set(
+                flow["profile_fields"]["preferences"]
+            )
+            assert "contact" not in profile
+            assert "company_name" not in profile
+
+            future = json.loads(json.dumps(flow_base["input"]))
+            future["sender"] = profile["sender"]
+            future["preferences"] = {
+                "tone": profile["preferences"]["tone"],
+                "max_words": 150,
+            }
+            future["contact"]["email"] = None
+            _, future_completed, future_questions = construct_sender_completion(
+                future, flow, remove_declared=False
+            )
+            assert future_questions == ["contact.email"], future_questions
+            assert future_completed["sender"] == profile["sender"]
+            print("PASS approved_profile_reuse")
+            passed += 1
+        except (AssertionError, KeyError, TypeError) as error:
+            failures.append(f"approved_profile_reuse: {error}")
+            print(f"FAIL approved_profile_reuse: {error}")
 
         # Adversarial mutation: a banned sender phrase must fail without a draft.
         banned_payload = json.loads(json.dumps(success_case["input"]))

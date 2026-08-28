@@ -6,7 +6,7 @@
       "fixture_source": "https://docs.apify.com/actors",
       "retrieved_on": "2026-08-28",
       "shape_note": "Locked-schema fixture suitable as normalized Apify scraper output; assembled from the cited public page, not produced by a live Actor run.",
-      "contact_note": "Avery is a synthetic demo contact.",
+      "contact_note": "Avery and the example.com target address are synthetic demo contact data.",
       "input": {
         "company_name": "Apify",
         "company_domain": "apify.com",
@@ -22,7 +22,8 @@
         ],
         "contact": {
           "name": "Avery",
-          "role": "Growth Lead"
+          "role": "Growth Lead",
+          "email": "avery@example.com"
         },
         "sender": {
           "name": "Growth Team",
@@ -48,7 +49,8 @@
         "facts": [],
         "contact": {
           "name": null,
-          "role": null
+          "role": null,
+          "email": null
         },
         "sender": {
           "name": "Growth Team",
@@ -82,7 +84,8 @@
         ],
         "contact": {
           "name": null,
-          "role": null
+          "role": null,
+          "email": null
         },
         "sender": {
           "name": "Growth Team",
@@ -117,6 +120,7 @@
       "sender.role",
       "sender.offer",
       "sender.call_to_action",
+      "contact.email",
       "preferences.tone"
     ],
     "answers": {
@@ -129,7 +133,19 @@
       "preferences.tone": "direct",
       "preferences.max_words": 150,
       "contact.name": null,
-      "contact.role": null
+      "contact.role": null,
+      "contact.email": null
+    },
+    "profile_fields": {
+      "sender": [
+        "name",
+        "role",
+        "offer",
+        "call_to_action"
+      ],
+      "preferences": [
+        "tone"
+      ]
     }
   }
 }
